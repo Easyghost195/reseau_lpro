@@ -29,303 +29,238 @@ import select
 import sys
 import pygame
 
-s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+map = [ [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
+        [ ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', ' ', ' ', 'S', ' ', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', 'X', ' ', 'X', 'X', ' ', 'X', '2' ],
+        [ '1', 'X', ' ', 'X', 'A', 'X', 'X', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ' ],
+        [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ] ]
+
+width = len(map[0])
+height = len(map)
+
+# This is the sprites size
+unit = 64
+grass = (0x00, 0x90, 0x00)
+
+# Pygame initialization
+pygame.init()
+screen = pygame.display.set_mode( (unit * width, unit * height) )
+
+# Load resources
+woman = pygame.image.load("image/woman.png")
+woman_ghost = woman.copy()
+woman_ghost.set_alpha(0.5)
+woman_coords = [ 0, 0 ]
+man = pygame.image.load("image/man.png")
+man_ghost = man.copy()
+man_ghost.set_alpha(0.5)
+man_coords = [ 0, 0 ]
+
+snake = pygame.image.load("image/snake.png")
+snake_ghost = snake.copy()
+snake_ghost.set_alpha(0.5)
+snake_coords = [ 0, 0 ]
+
+stone = pygame.image.load("image/stone.png")
+stone_coords = [ 0, 0 ]
+
+apple = pygame.image.load("image/apple.png")
+apple_coords = [ 0, 0 ]
+
+woman_move = [ 0, 0 ]
+man_move = [ 0, 0 ]
+snake_move = [ 0, 0 ]
+
+# Initialize positions
+def init():
+    def find(coords, c):
+        for y in range(len(map)):
+            for x in range(len(map[y])):
+                if map[y][x] == c:
+                    coords[0] = x
+                    coords[1] = y
+                    return
+        raise Exception('oops')
+
+    find(woman_coords, '1')
+    find(man_coords, '2')
+    find(snake_coords, 'S')
+    find(apple_coords, 'A')
+
+init()
+
+
+
 if len(sys.argv) == 1:
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('', 7777))
-    s.listen(1)
+    conn = None
+    try:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.bind(('', 7777))
+        s.listen(1)
+        conn, addr = s.accept()
+    except:
+        s.close()
+
+elif len(sys.argv) == 2:
+    try:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.connect((sys.argv[1],7777))
+    except:
+        sys.close()
+
 else:
-    s.connect((sys.argv[1],7777))
-
-adrs = [] #stockage des pseudos
-stocksock = [] #stockage des sockets
-liste = '' #liste des pseudos
-x = 0
-
-def envoi(message, sock):
-    for i in stocksock:
-        if ( i!=s and i!= sock):
-            x = stocksock.index(sock)
-            username = adrs[x]
-            message = str(username) + ": " + message
-            i.send(message.encode())
-
-def supprsock(sock):
-    x = stocksock.index(sock)
-    sock.close()
-    del adrs[x]
-    del stocksock[x]
-
-def whois(sock):
-    x = stocksock.index(sock)
-    pseudo = adrs[x]
-    return pseudo
+    print("Trop d'arguments")
+    sys.exit()
 
 while True:
-    l1,_,_ = select.select(stocksock + [s], [], [])
-    for sock in l1:
-        if sock == s:#JOIN
-            if len(sys.argv) == 1:
-                (connexion, adresse_client) = sock.accept()
-                stocksock.append(connexion)
-                adrs.append(adresse_client[1])
-                print ('Connection from ', adresse_client[1])
-                message_connexion = "JOIN: " + str(adresse_client[1]) + " \n"
-                for i in stocksock:
-                    if ( i!=s and i!= sock):
-                        i.send(message_connexion.encode())
+    """"if len(sys.argv) == 1:
+        data = conn.recv(1500)
 
-        else:
-            message = sock.recv(1500).decode('UTF-8')
-            if('NICK' in str(message)):#NICK
-                nick_len = len(message)-1
-                nick = message[5:nick_len]
-                x = stocksock.index(sock)#Cherche à quel indice ce trouve sock
-                old_pseudo = adrs[x]#ancien pseudo/adresse
-                adrs[x] = nick#Associe sock/pseudo
-                print('Changement de pseudo de ' + str(old_pseudo) + ' en ' + str(nick))
+    elif len(sys.argv) == 2:
+        data = s.recv(1500)
 
-            elif('LIST' in str(message)):#LIST
-                for i in adrs:
-                    if not isinstance(i, int):
-                        liste = i + " " + liste
-                    else:
-                        liste = str(i) + " " + liste
-                liste = liste + "\n"
-                sock.send(str.encode(liste))
-                liste = ''
+    if data == "WIN" or data == "LOSE":
+        print('CA BOUGE')"""
 
-            elif('QUIT' in str(message)):#QUIT
-                pseudo = whois(sock)
-                message_deconnexion = str(pseudo) + " nous quitte\n"
-                for i in stocksock:
-                    if (i!=s and i!= sock):
-                        i.send(message_deconnexion.encode())
-                print("Au revoir", pseudo)
-                supprsock(sock)
 
-            elif('KILL' in str(message)):#Exclure un client
-                kill_len = len(message)-1
-                kill = message[5:kill_len]#kill contient le pseudo ou l'adresse_client
-                if kill in adrs:
-                    x = adrs.index(kill)
-                    sock_kill = stocksock[x]
-                    message_kick = "Adieu " + str(kill) + "\n"
-                    sock_kill.send(message_kick.encode())
-                    print("Adieu", kill)
-                    supprsock(sock_kill)
-                else:
-                    kill_err = str(kill) + " n'existe pas\n"
-                    sock.send(kill_err.encode())
-                    print("Pseudo incorrect pour KILL")
+    e = pygame.event.wait()
 
-            elif('PRET' in str(message)):#Jeu
-                map = [ [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
-                        [ ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ' ],
-                        [ ' ', 'X', ' ', ' ', ' ', 'S', ' ', ' ', 'X', ' ' ],
-                        [ ' ', 'X', ' ', 'X', ' ', 'X', 'X', ' ', 'X', '2' ],
-                        [ '1', 'X', ' ', 'X', 'A', 'X', 'X', ' ', 'X', ' ' ],
-                        [ ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', 'X', ' ' ],
-                        [ ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ' ],
-                        [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ] ]
+    # Check for exit
+    if e.type == pygame.QUIT:
+        sys.exit()
 
-                width = len(map[0])
-                height = len(map)
+    elif e.type == pygame.KEYDOWN:
 
-                # This is the sprites size
-                unit = 64
-                grass = (0x00, 0x90, 0x00)
+    # Check for wowoman movements
+        if e.key == pygame.K_z:
 
-                # Pygame initialization
-                pygame.init()
-                screen = pygame.display.set_mode( (unit * width, unit * height) )
+            woman_move = [ 0, -1 ]
+            pass
+        elif e.key == pygame.K_s:
+            """if len(sys.argv) == 1:
+                conn.send("WIN")
+            elif len(sys.argv) == 2:
+                s.send("WIN")"""
+            woman_move = [ 0, 1 ]
+            pass
+        elif e.key == pygame.K_q:
+            woman_move = [ -1, 0 ]
+            pass
+        elif e.key == pygame.K_d:
+            woman_move = [ 1, 0 ]
+            pass
 
-                # Load resources
-                woman = pygame.image.load("image/woman.png")
-                woman_ghost = woman.copy()
-                woman_ghost.set_alpha(0.5)
-                woman_coords = [ 0, 0 ]
-                man = pygame.image.load("image/man.png")
-                man_ghost = man.copy()
-                man_ghost.set_alpha(0.5)
-                man_coords = [ 0, 0 ]
+    # Check for man movements
+        elif e.key == pygame.K_UP:
+            man_move = [ 0, -1 ]
+            pass
+        elif e.key == pygame.K_DOWN:
+            man_move = [ 0, 1 ]
+            pass
+        elif e.key == pygame.K_LEFT:
+            man_move = [ -1, 0 ]
+            pass
+        elif e.key == pygame.K_RIGHT:
+            man_move = [ 1, 0 ]
+            pass
 
-                snake = pygame.image.load("image/snake.png")
-                snake_ghost = snake.copy()
-                snake_ghost.set_alpha(0.5)
-                snake_coords = [ 0, 0 ]
+    #else:
+    #    print(e)
 
-                stone = pygame.image.load("image/stone.png")
-                stone_coords = [ 0, 0 ]
+    def move(coords, move):
+        return [ coords[0] + move[0], coords[1] + move[1] ]
 
-                apple = pygame.image.load("image/apple.png")
-                apple_coords = [ 0, 0 ]
+    # Compute moves
+    woman_newcoords = move(woman_coords, woman_move)
+    man_newcoords = move(man_coords, man_move)
+    snake_newcoords = move(snake_coords, snake_move)
 
-                woman_move = [ 0, 0 ]
-                man_move = [ 0, 0 ]
-                snake_move = [ 0, 0 ]
+    # But bound to window
+    def bound(newcoords, coords, move):
+        if newcoords[0] < 0 or newcoords[0] >= width or newcoords[1] < 0 or newcoords[1] >= height:
+            # out of bounds
+            newcoords[0] = coords[0]
+            newcoords[1] = coords[1]
+            move[0] = 0
+            move[1] = 0
 
-                # Initialize positions
-                def init():
-                    def find(coords, c):
-                        for y in range(len(map)):
-                            for x in range(len(map[y])):
-                                if map[y][x] == c:
-                                    coords[0] = x
-                                    coords[1] = y
-                                    return
-                        raise Exception('oops')
+    bound(woman_newcoords, woman_coords, woman_move)
+    bound(man_newcoords, man_coords, man_move)
+    bound(snake_newcoords, snake_coords, snake_move)
 
-                    find(woman_coords, '1')
-                    find(man_coords, '2')
-                    find(snake_coords, 'S')
-                    find(apple_coords, 'A')
+    def collide(newcoords, coords, move):
+        if map[newcoords[1]][newcoords[0]] == 'X':
+            # Stone
+            newcoords[0] = coords[0]
+            newcoords[1] = coords[1]
+            move[0] = 0
+            move[1] = 0
 
-                init()
-                while True:
-                    e = pygame.event.wait()
+    # Prevent collisions with stones
+    collide(woman_newcoords, woman_coords, woman_move)
+    collide(man_newcoords, man_coords, man_move)
 
-                    # Check for exit
-                    if e.type == pygame.QUIT:
-                        sys.exit()
+    # Prevent collisions between players
+    if woman_newcoords == man_newcoords:
+        woman_newcoords = woman_coords
+        woman_move = [ 0, 0 ]
+        man_newcoords = man_coords
+        man_move = [ 0, 0 ]
 
-                    elif e.type == pygame.KEYDOWN:
+    # Make everybody move when everybody chose her/his direction
+    if woman_move != [ 0, 0 ] and man_move != [ 0, 0 ]:
+        woman_coords = woman_newcoords
+        man_coords = man_newcoords
+        snake_coords = snake_newcoords
+        woman_move = [ 0, 0 ]
+        man_move = [ 0, 0 ]
 
-                    # Check for wowoman movements
-                        if e.key == pygame.K_z:
-                            woman_move = [ 0, -1 ]
-                            pass
-                        elif e.key == pygame.K_s:
-                            woman_move = [ 0, 1 ]
-                            pass
-                        elif e.key == pygame.K_q:
-                            woman_move = [ -1, 0 ]
-                            pass
-                        elif e.key == pygame.K_d:
-                            woman_move = [ 1, 0 ]
-                            pass
+    #print("woman at %u,%u to %u,%u" % (woman_coords[0], woman_coords[1], woman_newcoords[0], woman_newcoords[1]))
+    #print("man at %u,%u to %u,%u" % (man_coords[0], man_coords[1], man_newcoords[0], man_newcoords[1]))
+    #print("snake at %u,%u to %u,%u" % (snake_coords[0], snake_coords[1], snake_newcoords[0], snake_newcoords[1]))
 
-                    # Check for man movements
-                        elif e.key == pygame.K_UP:
-                            man_move = [ 0, -1 ]
-                            pass
-                        elif e.key == pygame.K_DOWN:
-                            man_move = [ 0, 1 ]
-                            pass
-                        elif e.key == pygame.K_LEFT:
-                            man_move = [ -1, 0 ]
-                            pass
-                        elif e.key == pygame.K_RIGHT:
-                            man_move = [ 1, 0 ]
-                            pass
+    # Display everything
+    screen.fill(grass)
 
-                    #else:
-                    #    print(e)
+    def blit(item, coords):
+        screen.blit(item, (unit * coords[0], unit * coords[1]))
 
-                    def move(coords, move):
-                        return [ coords[0] + move[0], coords[1] + move[1] ]
+    # Display stones
+    for y in range(len(map)):
+        for x in range(len(map[y])):
+            if map[y][x] == 'X':
+                blit(stone, (x, y))
 
-                    # Compute moves
-                    woman_newcoords = move(woman_coords, woman_move)
-                    man_newcoords = move(man_coords, man_move)
-                    snake_newcoords = move(snake_coords, snake_move)
+    # Display moving items
+    blit(apple, apple_coords)
 
-                    # But bound to window
-                    def bound(newcoords, coords, move):
-                        if newcoords[0] < 0 or newcoords[0] >= width or newcoords[1] < 0 or newcoords[1] >= height:
-                            # out of bounds
-                            newcoords[0] = coords[0]
-                            newcoords[1] = coords[1]
-                            move[0] = 0
-                            move[1] = 0
+    blit(woman_ghost, woman_newcoords)
+    blit(woman, woman_coords)
+    blit(man_ghost, man_newcoords)
+    blit(man, man_coords)
 
-                    bound(woman_newcoords, woman_coords, woman_move)
-                    bound(man_newcoords, man_coords, man_move)
-                    bound(snake_newcoords, snake_coords, snake_move)
+    blit(snake_ghost, snake_newcoords)
+    blit(snake, snake_coords)
 
-                    def collide(newcoords, coords, move):
-                        if map[newcoords[1]][newcoords[0]] == 'X':
-                            # Stone
-                            newcoords[0] = coords[0]
-                            newcoords[1] = coords[1]
-                            move[0] = 0
-                            move[1] = 0
+    # Show new state
+    pygame.display.flip()
 
-                    # Prevent collisions with stones
-                    collide(woman_newcoords, woman_coords, woman_move)
-                    collide(man_newcoords, man_coords, man_move)
+    if woman_coords == apple_coords:
+        print("woman won!\n")
+        sys.exit()
+    elif man_coords == apple_coords:
+        print("man won!\n")
+        sys.exit()
 
-                    # Prevent collisions between players
-                    if woman_newcoords == man_newcoords:
-                        woman_newcoords = woman_coords
-                        woman_move = [ 0, 0 ]
-                        man_newcoords = man_coords
-                        man_move = [ 0, 0 ]
+    if woman_coords == snake_coords:
+        print("woman lost!\n")
+        sys.exit()
+    elif man_coords == snake_coords:
+        print("man lost!\n")
+        sys.exit()
 
-                    # Make everybody move when everybody chose her/his direction
-                    if woman_move != [ 0, 0 ] and man_move != [ 0, 0 ]:
-                        woman_coords = woman_newcoords
-                        man_coords = man_newcoords
-                        snake_coords = snake_newcoords
-                        woman_move = [ 0, 0 ]
-                        man_move = [ 0, 0 ]
-
-                    #print("woman at %u,%u to %u,%u" % (woman_coords[0], woman_coords[1], woman_newcoords[0], woman_newcoords[1]))
-                    #print("man at %u,%u to %u,%u" % (man_coords[0], man_coords[1], man_newcoords[0], man_newcoords[1]))
-                    #print("snake at %u,%u to %u,%u" % (snake_coords[0], snake_coords[1], snake_newcoords[0], snake_newcoords[1]))
-
-                    # Display everything
-                    screen.fill(grass)
-
-                    def blit(item, coords):
-                        screen.blit(item, (unit * coords[0], unit * coords[1]))
-
-                    # Display stones
-                    for y in range(len(map)):
-                        for x in range(len(map[y])):
-                            if map[y][x] == 'X':
-                                blit(stone, (x, y))
-
-                    # Display moving items
-                    blit(apple, apple_coords)
-
-                    blit(woman_ghost, woman_newcoords)
-                    blit(woman, woman_coords)
-                    blit(man_ghost, man_newcoords)
-                    blit(man, man_coords)
-
-                    blit(snake_ghost, snake_newcoords)
-                    blit(snake, snake_coords)
-
-                    # Show new state
-                    pygame.display.flip()
-
-                    if woman_coords == apple_coords:
-                        print("woman won!\n")
-                        sys.exit()
-                    elif man_coords == apple_coords:
-                        print("man won!\n")
-                        sys.exit()
-
-                    if woman_coords == snake_coords:
-                        print("woman lost!\n")
-                        sys.exit()
-                    elif man_coords == snake_coords:
-                        print("man lost!\n")
-                        sys.exit()
-
-            elif not message:#QUIT
-                pseudo = whois(sock)
-                print("Adieu", pseudo)
-                message_deconnexion = "QUIT: " + str(pseudo) + "\n"
-                for i in stocksock:
-                    if (i!=s and i!= sock):
-                        i.send(message_deconnexion.encode())
-                supprsock(sock)
-
-            else:
-                envoi(message, sock)
-                pseudo = whois(sock)
-                print("Envoi de message de", pseudo)
-
-s.close()
+if len(sys.argv) == 1:
+    server_s.close()
