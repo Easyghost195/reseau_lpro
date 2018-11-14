@@ -95,12 +95,12 @@ init()
 
 
 if len(sys.argv) == 1:
-    conn = None
+    #conn = None
     try:
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.bind(('', 7777))
         s.listen(1)
-        conn, addr = s.accept()
+        (conn, addr) = s.accept()
     except:
         s.close()
 
@@ -109,63 +109,114 @@ elif len(sys.argv) == 2:
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.connect((sys.argv[1],7777))
     except:
-        sys.close()
+        s.close()
 
 else:
     print("Trop d'arguments")
     sys.exit()
 
 while True:
-    """"if len(sys.argv) == 1:
-        data = conn.recv(1500)
-
-    elif len(sys.argv) == 2:
-        data = s.recv(1500)
-
-    if data == "WIN" or data == "LOSE":
-        print('CA BOUGE')"""
-
-
     e = pygame.event.wait()
 
     # Check for exit
     if e.type == pygame.QUIT:
         sys.exit()
 
+
+
     elif e.type == pygame.KEYDOWN:
-
-    # Check for wowoman movements
+        man_move_data = None
+        girl_move_data = None
+    # Check for movements
         if e.key == pygame.K_z:
-
-            woman_move = [ 0, -1 ]
+            if len(sys.argv) == 1:
+                man_move_data = 122
+                send_data_man(man_move_data)
+            elif len(sys.argv) == 2:
+                girl_move_data = 122
+                send_data_girl(girl_move_data)
             pass
         elif e.key == pygame.K_s:
-            """if len(sys.argv) == 1:
-                conn.send("WIN")
+            if len(sys.argv) == 1:
+                man_move_data = 115
+                send_data_man(man_move_data)
             elif len(sys.argv) == 2:
-                s.send("WIN")"""
-            woman_move = [ 0, 1 ]
+                girl_move_data = 115
+                send_data_girl(girl_move_data)
             pass
         elif e.key == pygame.K_q:
-            woman_move = [ -1, 0 ]
+            if len(sys.argv) == 1:
+                man_move_data = 113
+                send_data_man(man_move_data)
+            elif len(sys.argv) == 2:
+                girl_move_data = 113
+                send_data_girl(girl_move_data)
             pass
         elif e.key == pygame.K_d:
-            woman_move = [ 1, 0 ]
+            if len(sys.argv) == 1:
+                man_move_data = 100
+                send_data_man(man_move_data)
+            elif len(sys.argv) == 2:
+                girl_move_data = 100
+                send_data_girl(girl_move_data)
             pass
 
-    # Check for man movements
-        elif e.key == pygame.K_UP:
-            man_move = [ 0, -1 ]
-            pass
-        elif e.key == pygame.K_DOWN:
-            man_move = [ 0, 1 ]
-            pass
-        elif e.key == pygame.K_LEFT:
-            man_move = [ -1, 0 ]
-            pass
-        elif e.key == pygame.K_RIGHT:
-            man_move = [ 1, 0 ]
-            pass
+    #envoi et reception des datas
+    def send_data_man(man_move_data):
+        conn.send(str(man_move_data).encode())
+        girl_move_data_string = conn.recv(1500).decode('UTF-8')
+        girl_move_data = int(girl_move_data_string)
+        print("<send_data_man>")
+        print("girl_move_data: ")
+        print(girl_move_data)
+        print("-------------")
+        print(type(man_move_data))
+        print(type(girl_move_data))
+        print("-------------")
+        print(man_move_data)
+        woman_move = movements_girl(girl_move_data)
+        man_move = movements_man(man_move_data)
+        print(woman_move)
+        print(man_move)
+        print("</send_data_man>")
+
+    def send_data_girl(girl_move_data):
+        s.send(str(girl_move_data).encode())
+        man_move_data_string = s.recv(1500).decode('UTF-8')
+        man_move_data = int(man_move_data_string)
+        woman_move = movements_girl(girl_move_data)
+        man_move = movements_man(man_move_data)
+
+    #movements
+    def movements_girl(girl_move_data):
+        print("<movements_girl>")
+        print("girl_move_data: ")
+        print(girl_move_data)
+        if girl_move_data == 122:#z
+            print("girl z")
+            print("</movements_girl>")
+            return [ 0, -1 ]
+        elif girl_move_data == 115:#s
+            return [ 0, 1 ]
+        elif girl_move_data == 113:#q
+            return [ -1, 0 ]
+        elif girl_move_data == 100:#d
+            return [ 1, 0 ]
+
+    def movements_man(man_move_data):
+        print("<movements_man>")
+        print("man_move_data: ")
+        print(man_move_data)
+        if man_move_data == 122:#z
+            print("man z")
+            print("</movements_man>")
+            return [ 0, -1 ]
+        elif man_move_data == 115:#s
+            return [ 0, 1 ]
+        elif man_move_data == 113:#q
+            return [ -1, 0 ]
+        elif man_move_data == 100:#d
+            return [ 1, 0 ]
 
     #else:
     #    print(e)
@@ -263,4 +314,7 @@ while True:
         sys.exit()
 
 if len(sys.argv) == 1:
-    server_s.close()
+    s.close()
+    conn.close()
+elif len(sys.arg) == 2:
+    s.close()
