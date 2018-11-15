@@ -31,9 +31,9 @@ import pygame
 
 map = [ [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
         [ ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ' ],
-        [ ' ', 'X', ' ', ' ', ' ', 'S', ' ', ' ', 'X', ' ' ],
-        [ ' ', 'X', ' ', 'X', ' ', 'X', 'X', ' ', 'X', '2' ],
-        [ '1', 'X', ' ', 'X', 'A', 'X', 'X', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', ' ', '1', 'S', '2', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', 'X', ' ', 'X', 'X', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', 'X', 'A', 'X', 'X', ' ', 'X', ' ' ],
         [ ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', 'X', ' ' ],
         [ ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ' ],
         [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ] ]
@@ -48,20 +48,21 @@ grass = (0x00, 0x90, 0x00)
 # Pygame initialization
 pygame.init()
 screen = pygame.display.set_mode( (unit * width, unit * height) )
+alpha = 128
 
 # Load resources
 woman = pygame.image.load("image/woman.png")
 woman_ghost = woman.copy()
-woman_ghost.set_alpha(0.5)
+woman_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
 woman_coords = [ 0, 0 ]
 man = pygame.image.load("image/man.png")
 man_ghost = man.copy()
-man_ghost.set_alpha(0.5)
+man_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
 man_coords = [ 0, 0 ]
 
 snake = pygame.image.load("image/snake.png")
 snake_ghost = snake.copy()
-snake_ghost.set_alpha(0.5)
+snake_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
 snake_coords = [ 0, 0 ]
 
 stone = pygame.image.load("image/stone.png")
@@ -91,6 +92,48 @@ def init():
     find(apple_coords, 'A')
 
 init()
+
+#envoi et reception des datas
+def send_data_man(man_move_data):
+    conn.send(str(man_move_data).encode())
+    girl_move_data_string = conn.recv(1500).decode('UTF-8')
+    girl_move_data = int(girl_move_data_string)#str to int
+    global woman_move
+    woman_move = movements_girl(girl_move_data)
+    global man_move
+    man_move = movements_man(man_move_data)
+
+def send_data_girl(girl_move_data):
+    s.send(str(girl_move_data).encode())
+    man_move_data_string = s.recv(1500).decode('UTF-8')
+    man_move_data = int(man_move_data_string)#str to int
+    global woman_move
+    woman_move = movements_girl(girl_move_data)
+    global man_move
+    man_move = movements_man(man_move_data)
+
+#movements
+def movements_girl(girl_move_data):
+    print(girl_move_data)
+    if girl_move_data == 122:#z
+        return [ 0, -1 ]
+    elif girl_move_data == 115:#s
+        return [ 0, 1 ]
+    elif girl_move_data == 113:#q
+        return [ -1, 0 ]
+    elif girl_move_data == 100:#d
+        return [ 1, 0 ]
+
+def movements_man(man_move_data):
+    print(man_move_data)
+    if man_move_data == 122:#z
+        return [ 0, -1 ]
+    elif man_move_data == 115:#s
+        return [ 0, 1 ]
+    elif man_move_data == 113:#q
+        return [ -1, 0 ]
+    elif man_move_data == 100:#d
+        return [ 1, 0 ]
 
 
 
@@ -131,95 +174,41 @@ try:
             man_move_data = None
             girl_move_data = None
         # Check for movements
-            if e.key == pygame.K_z:
-                if len(sys.argv) == 1:
-                    man_move_data = 122
-                    send_data_man(man_move_data)
-                elif len(sys.argv) == 2:
-                    girl_move_data = 122
-                    send_data_girl(girl_move_data)
-                pass
-            elif e.key == pygame.K_s:
-                if len(sys.argv) == 1:
-                    man_move_data = 115
-                    send_data_man(man_move_data)
-                elif len(sys.argv) == 2:
-                    girl_move_data = 115
-                    send_data_girl(girl_move_data)
-                pass
-            elif e.key == pygame.K_q:
-                if len(sys.argv) == 1:
-                    man_move_data = 113
-                    send_data_man(man_move_data)
-                elif len(sys.argv) == 2:
-                    girl_move_data = 113
-                    send_data_girl(girl_move_data)
-                pass
-            elif e.key == pygame.K_d:
-                if len(sys.argv) == 1:
-                    man_move_data = 100
-                    send_data_man(man_move_data)
-                elif len(sys.argv) == 2:
-                    girl_move_data = 100
-                    send_data_girl(girl_move_data)
-                pass
+            if man_move == [ 0, 0 ] or woman_move == [ 0, 0 ]:
+                if e.key == pygame.K_z:
+                    if len(sys.argv) == 1:
+                        man_move_data = 122
+                        send_data_man(man_move_data)
+                    elif len(sys.argv) == 2:
+                        girl_move_data = 122
+                        send_data_girl(girl_move_data)
+                    pass
+                elif e.key == pygame.K_s:
+                    if len(sys.argv) == 1:
+                        man_move_data = 115
+                        send_data_man(man_move_data)
+                    elif len(sys.argv) == 2:
+                        girl_move_data = 115
+                        send_data_girl(girl_move_data)
+                    pass
+                elif e.key == pygame.K_q:
+                    if len(sys.argv) == 1:
+                        man_move_data = 113
+                        send_data_man(man_move_data)
+                    elif len(sys.argv) == 2:
+                        girl_move_data = 113
+                        send_data_girl(girl_move_data)
+                    pass
+                elif e.key == pygame.K_d:
+                    if len(sys.argv) == 1:
+                        man_move_data = 100
+                        send_data_man(man_move_data)
+                    elif len(sys.argv) == 2:
+                        girl_move_data = 100
+                        send_data_girl(girl_move_data)
+                    pass
 
-        #envoi et reception des datas
-        def send_data_man(man_move_data):
-            conn.send(str(man_move_data).encode())
-            girl_move_data_string = conn.recv(1500).decode('UTF-8')
-            girl_move_data = int(girl_move_data_string)
-            print("<send_data_man>")
-            print("girl_move_data: ")
-            print(girl_move_data)
-            print("-------------")
-            print(type(man_move_data))
-            print(type(girl_move_data))
-            print("-------------")
-            print(man_move_data)
-            woman_move = movements_girl(girl_move_data)
-            man_move = movements_man(man_move_data)
-            print(woman_move)
-            print(man_move)
-            print("</send_data_man>")
 
-        def send_data_girl(girl_move_data):
-            s.send(str(girl_move_data).encode())
-            man_move_data_string = s.recv(1500).decode('UTF-8')
-            man_move_data = int(man_move_data_string)
-            woman_move = movements_girl(girl_move_data)
-            man_move = movements_man(man_move_data)
-
-        #movements
-        def movements_girl(girl_move_data):
-            print("<movements_girl>")
-            print("girl_move_data: ")
-            print(girl_move_data)
-            if girl_move_data == 122:#z
-                print("girl z")
-                print("</movements_girl>")
-                return [ 0, -1 ]
-            elif girl_move_data == 115:#s
-                return [ 0, 1 ]
-            elif girl_move_data == 113:#q
-                return [ -1, 0 ]
-            elif girl_move_data == 100:#d
-                return [ 1, 0 ]
-
-        def movements_man(man_move_data):
-            print("<movements_man>")
-            print("man_move_data: ")
-            print(man_move_data)
-            if man_move_data == 122:#z
-                print("man z")
-                print("</movements_man>")
-                return [ 0, -1 ]
-            elif man_move_data == 115:#s
-                return [ 0, 1 ]
-            elif man_move_data == 113:#q
-                return [ -1, 0 ]
-            elif man_move_data == 100:#d
-                return [ 1, 0 ]
 
         #else:
         #    print(e)
@@ -231,6 +220,12 @@ try:
         woman_newcoords = move(woman_coords, woman_move)
         man_newcoords = move(man_coords, man_move)
         snake_newcoords = move(snake_coords, snake_move)
+        print("woman_newcoords")
+        print(woman_newcoords)
+        print("woman_coords")
+        print(woman_coords)
+        print("woman_move")
+        print(woman_move)
 
         # But bound to window
         def bound(newcoords, coords, move):
