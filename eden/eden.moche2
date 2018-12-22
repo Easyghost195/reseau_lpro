@@ -32,8 +32,8 @@ import pygame
 map = [ [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
         [ ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ' ],
         [ ' ', 'X', ' ', ' ', ' ', 'S', ' ', ' ', 'X', ' ' ],
-        [ '1', 'X', ' ', 'X', ' ', 'X', 'X', ' ', 'X', '2' ],
-        [ ' ', 'X', ' ', 'X', 'A', 'X', 'X', ' ', 'X', ' ' ],
+        [ ' ', 'X', ' ', 'X', ' ', 'X', 'X', ' ', 'X', '2' ],
+        [ '1', 'X', ' ', 'X', 'A', 'X', 'X', ' ', 'X', ' ' ],
         [ ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', 'X', ' ' ],
         [ ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', ' ' ],
         [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ] ]
@@ -47,22 +47,26 @@ grass = (0x00, 0x90, 0x00)
 
 # Pygame initialization
 pygame.init()
+if len(sys.argv) == 1:
+    pygame.display.set_caption('Man')
+else:
+    pygame.display.set_caption('Woman')
 screen = pygame.display.set_mode( (unit * width, unit * height) )
 alpha = 128
 
 # Load resources
 woman = pygame.image.load("image/woman.png")
-woman_ghost = woman.copy()
-woman_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
+#woman_ghost = woman.copy()
+#woman_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
 woman_coords = [ 0, 0 ]
 man = pygame.image.load("image/man.png")
-man_ghost = man.copy()
-man_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
+#man_ghost = man.copy()
+#man_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
 man_coords = [ 0, 0 ]
 
 snake = pygame.image.load("image/snake.png")
-snake_ghost = snake.copy()
-snake_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
+#snake_ghost = snake.copy()
+#snake_ghost.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
 snake_coords = [ 0, 0 ]
 
 stone = pygame.image.load("image/stone.png")
@@ -272,12 +276,12 @@ try:
         # Display moving items
         blit(apple, apple_coords)
 
-        blit(woman_ghost, woman_newcoords)
+        #blit(woman_ghost, woman_newcoords)
         blit(woman, woman_coords)
-        blit(man_ghost, man_newcoords)
+        #blit(man_ghost, man_newcoords)
         blit(man, man_coords)
 
-        blit(snake_ghost, snake_newcoords)
+        #blit(snake_ghost, snake_newcoords)
         blit(snake, snake_coords)
 
         # Show new state
