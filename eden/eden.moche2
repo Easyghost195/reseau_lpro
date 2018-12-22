@@ -168,8 +168,6 @@ try:
         if e.type == pygame.QUIT:
             sys.exit()
 
-
-
         elif e.type == pygame.KEYDOWN:
         # Check for movements
             if man_move == [ 0, 0 ] or woman_move == [ 0, 0 ]:
